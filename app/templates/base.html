@@ -1,13 +1,21 @@
+<!DOCTYPE html>
 <html>
     <head>
-        <title>{{ title }} - Microblog</title>
+      <script type="text/javascript" src="{{ url_for('static', filename='base.js') }}"></script>
+      <script type="text/javascript" src="/static/KaTeX-0.10.0/dist/katex.js"></script>
+      <link rel="stylesheet" type="text/css" href="/static/KaTeX-0.10.0/dist/katex.css">
+      <title>{{ title }} - CalHacks5.0</title>
     </head>
     <div>
-        Microblog:
+        CalHacks 5.0:
         <a href="{{ url_for('home') }}">Home</a>
         <a href="{{ url_for('login') }}">Login</a>
     </div>
     <body>
       {% block content %}{% endblock %}
     </body>
+    <p><span id="mykatex1">...</span></p>
+    <script>
+      katex.render("f(a,b,c) = (a^2+b^2+c^2)^3", mykatex1);
+    </script>
 </html>
