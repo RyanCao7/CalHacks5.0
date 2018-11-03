@@ -76,12 +76,24 @@ def connect_to_cloudsql():
 
 @app.route('/')
 
+# Simply performs the query and returns the appropriate string
+def get_data_from_database(query):
+    db = connect_to_cloudsql()
+    cursor = db.cursor()
+    cursor.execute('USE calhacktable')
+    cursor.execute(query)
+    stuff = cursor.fetchall()
+    cursor.close()
+    return stuff
+
 @app.route('/home', methods = ['GET', 'POST'])
 def home():
     global params
     print(request.cookies)
     logged_in = False
 
+    categories = list(thing[0] for thing in get_data_from_database('SELECT DISTINCT Category FROM Question'))
+    print('categories:', categories)
     # This signifies logged in
     assert(request.cookies['username'] is not None)
     if request.cookies['username'] != 'not logged in':
@@ -94,50 +106,33 @@ def home():
         params['response'] = None
         return resp
 
-    return render_template('base.html', title = 'test_title', username = params['username'], logged_in = logged_in)
+    return render_template('base.html', title = 'test_title', username = params['username'], logged_in = logged_in,
+    categories = categories)
 
 @app.route('/api/v1/users')
 def v1_users():
-    db = connect_to_cloudsql()
-    cursor = db.cursor()
-    cursor.execute('USE calhacktable')
-    cursor.execute('SELECT * FROM User')
-    stuff = cursor.fetchall()
-
-    cursor.close()
-    return jsonify(mapping_users(stuff))
+    raw = get_data_from_database('SELECT * FROM User')
+    return jsonify(mapping_users(raw))
 
 @app.route('/api/v1/solves')
 def v1_solves():
-    db = connect_to_cloudsql()
-    cursor = db.cursor()
-    cursor.execute('USE calhacktable')
-    cursor.execute('SELECT * FROM Solves')
-    stuff = cursor.fetchall()
-
-    cursor.close()
-    return jsonify(mapping_solves(stuff))
+    raw = get_data_from_database('SELECT * FROM Solves')
+    return jsonify(mapping_solves(raw))
 
 @app.route('/api/v1/questions')
 def v1_questions():
-    db = connect_to_cloudsql()
-    cursor = db.cursor()
-    cursor.execute('USE calhacktable')
-    cursor.execute('SELECT * FROM Question')
-    stuff = cursor.fetchall()
-
-    cursor.close()
-    return jsonify(mapping_question(stuff))
+    raw = get_data_from_database('SELECT * FROM Question')
+    return jsonify(mapping_question(raw))
 
 @app.route('/api/v1/<user_id>/<category>')
 def category_questions(user_id, category):
-    db = connect_to_cloudsql()
-    cursor = db.cursor()
-    cursor.execute('USE calhacktable')
-    cursor.execute('SELECT * FROM Question q WHERE q.category="{}" AND NOT (q.id = ANY(SELECT question_id FROM Solves WHERE user_id={}))'.format(category, user_id))
-    stuff = cursor.fetchall()
+    raw = get_data_from_database('SELECT * FROM Question q WHERE q.category="{}" AND NOT (q.id = ANY(SELECT question_id FROM Solves WHERE user_id={}))'.format(category, user_id))
+    return jsonify(mapping_question(raw))
 
-    return jsonify(mapping_question(stuff))
+@app.route('/api/v1/solves/<user_id>')
+def solves_by_user(user_id):
+    raw = get_data_from_database('SELECT * FROM Solves WHERE user_id="{}"')
+    return jsonify(mapping_solves(raw))
 
 @app.route('/logout', methods = ['GET', 'POST'])
 def logout():
@@ -146,7 +141,6 @@ def logout():
     resp.set_cookie('userID', 'not logged in')
     resp.set_cookie('username', 'not logged in')
     return resp
-
 
 @app.route('/create', methods = ['GET', 'POST'])
 def create_account():

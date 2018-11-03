@@ -18,6 +18,13 @@
     {% if logged_in %}
       <p>
         Welcome, {{ username }}!
+        {% for category in categories %}
+          <form action = "/home?category={{ category }}" method = "get">
+            <button>
+              {{ category }}
+            </button>
+          </form>
+        {% endfor %}
       </p>
     {% endif %}
     <body>
