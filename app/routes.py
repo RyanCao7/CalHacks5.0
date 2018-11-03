@@ -59,9 +59,20 @@ def mapping_users(info_tuple):
         json_dicts.append(dict_bundle)
     return json_dicts
 
+# Simply performs the query and returns the appropriate string
+def get_data_from_database(query):
+    db = connect_to_cloudsql()
+    cursor = db.cursor()
+    cursor.execute('USE calhacktable')
+    cursor.execute(query)
+    stuff = cursor.fetchall()
+    cursor.close()
+    return stuff
+
 def connect_to_cloudsql():
     # Attempts to connect using UNIX socket
-    if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
+    if True: # os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine/'):
+        print("Here")
         cloudsql_unix_socket = os.path.join('/cloudsql', CLOUDSQL_CONNECTION_NAME)
         db = MySQLdb.connect(
                 unix_socket=cloudsql_unix_socket,
@@ -75,16 +86,6 @@ def connect_to_cloudsql():
     return db
 
 @app.route('/')
-
-# Simply performs the query and returns the appropriate string
-def get_data_from_database(query):
-    db = connect_to_cloudsql()
-    cursor = db.cursor()
-    cursor.execute('USE calhacktable')
-    cursor.execute(query)
-    stuff = cursor.fetchall()
-    cursor.close()
-    return stuff
 
 @app.route('/home', methods = ['GET', 'POST'])
 def home():
