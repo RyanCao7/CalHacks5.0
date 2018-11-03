@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <title>{{ title }} - Microblog</title>
+    </head>
+    <div>
+        Microblog:
+        <a href="{{ url_for('home') }}">Home</a>
+        <a href="{{ url_for('login') }}">Login</a>
+    </div>
+    <body>
+      {% block content %}{% endblock %}
+    </body>
+</html>
