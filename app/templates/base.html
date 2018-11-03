@@ -9,8 +9,17 @@
     <div>
         CalHacks 5.0:
         <a href="{{ url_for('home') }}">Home</a>
-        <a href="{{ url_for('login') }}">Login</a>
+        {% if logged_in %}
+          <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}">Login</a>
+        {% endif %}
     </div>
+    {% if logged_in %}
+      <p>
+        Welcome, {{ username }}!
+      </p>
+    {% endif %}
     <body>
       {% block content %}{% endblock %}
     </body>

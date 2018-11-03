@@ -1,20 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Sign In</h1>
+    <h1>Create Account</h1>
     {% if fail %}
       <p>
-        Error: That username/password combination doesn't exist.
+        Error: That username is already taken!
       </p>
     {% endif %}
-    <form action="/login" id="submitForm" method="get">
+    <form action="/create" id="submitForm" method="get">
       Username: <input class="dataform" type="text" name="name" required="required"><br>
       Password: <input class="dataform" type="text" name="pass" required="required"><br>
       <input type="submit" id="submitButton" value="Submit" onClick="createAccount()">
-    </form>
-    <form action = "/create" method = "get">
-      <button>
-        Create Account
-      </button>
     </form>
 {% endblock %}
