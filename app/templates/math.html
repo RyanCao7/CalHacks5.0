@@ -1,6 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
+  <p>
+    Total solved: {{ total - unsolved }} / {{ total }}
+  </p>
+  {% if unsolved == 0 %}
+    <p>
+      All done!
+    </p>
+  {% else %}
+    <form action = "/question?category={{ category }}" method = "post">
+      <button>
+        Solve more!
+      </button>
+    </form>
+  {% endif %}
   <p><span id="mykatex1">...</span></p>
   <script>
     katex.render("{{ question_text }}", mykatex1);

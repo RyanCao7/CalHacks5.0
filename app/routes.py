@@ -110,6 +110,7 @@ def get_data_from_database(query):
     cursor.execute(query)
     stuff = cursor.fetchall()
     cursor.close()
+    db.commit()
     return stuff
 
 def connect_to_cloudsql():
@@ -130,22 +131,55 @@ def connect_to_cloudsql():
 
 @app.route('/')
 
+@app.route('/results', methods = ['GET', 'POST'])
+def results():
+    print(request.args)
+    print(request.form)
+    category = request.form['category']
+    question_id = request.form['question_id']
+    user_answer = request.form['response']
+    print(category, question_id, user_answer)
+    username = request.cookies['username']
+    user_id = request.cookies['user_id']
+    raw = get_data_from_database('SELECT * FROM Question q WHERE q.id="{}"'.format(question_id))[0]
+    answer = raw[4]
+
+    correct = abs(int(user_answer) - int(answer)) < 0.01
+    time = random.randint(1, 300)
+    if correct:
+        get_data_from_database('INSERT INTO Solves (user_id, question_id, time) VALUES ("{}", "{}", "{}")'.format(user_id, question_id, time))
+
+    unsolved = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}" AND NOT (q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(category, user_id))[0][0]
+    total = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}"'.format(category))[0][0]
+
+    return render_template('results.html', category = category, total = total, unsolved = unsolved, correct = correct)
+
+@app.route('/question', methods = ['GET', 'POST'])
+def question():
+    category = request.args['category']
+    username = request.cookies['username']
+    user_id = request.cookies['user_id']
+    raw = get_data_from_database('SELECT * FROM Question q WHERE q.category="{}" AND NOT(q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(category, user_id))
+    random_raw = random.choice(raw)
+    question_id = random_raw[0]
+    category = random_raw[1]
+    text = random_raw[2]
+    question = random_raw[3]
+    answer = random_raw[4]
+
+    return render_template('question.html', question_text = raw_text(question.strip('$')).replace('\\', '\\\\'), category = category, answer = answer, question_id = question_id)
+
 @app.route('/category', methods = ['GET', 'POST'])
 def category():
-    print("Here")
     category = request.args['category']
     print(request.cookies)
     username = request.cookies['username']
     user_id = request.cookies['user_id']
 
-    raw = get_data_from_database('SELECT * FROM Question q WHERE q.category="{}" AND NOT(q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(category, user_id))
-    random_raw = random.choice(raw)
-    problem_id = random_raw[0]
-    category = random_raw[1]
-    text = random_raw[2]
-    question = random_raw[3]
-    answer = random_raw[4]
-    return render_template('math.html', question_text = raw_text(question.strip('$')).replace('\\', '\\\\'))
+    unsolved = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}" AND NOT (q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(category, user_id))[0][0]
+    total = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}"'.format(category))[0][0]
+
+    return render_template('math.html', unsolved = unsolved, total = total, category = category)
 
 
 @app.route('/home', methods = ['GET', 'POST'])
@@ -189,12 +223,11 @@ def v1_user():
 # Pass the player id, question id, and time taken to add that problem to the player's solves.
 @app.route('/api/v1/solve', methods = ['GET', 'POST'])
 def v1_solve():
-    if 'player_id' and 'question_id' and 'time' in request.args:
-        player_id = request.args['player_id']
+    if 'user_id' and 'question_id' and 'time' in request.args:
+        user_id = request.args['user_id']
         question_id = request.args['question_id']
         time = request.args['time']
-        print('INSERT INTO Solves (user_id, question_id, time) VALUES ("{}", "{}", "{}")'.format(player_id, question_id, time))
-        raw = get_data_from_database('INSERT INTO Solves (user_id, question_id, time) VALUES ("{}", "{}", "{}")'.format(player_id, question_id, time))
+        raw = get_data_from_database('INSERT INTO Solves (user_id, question_id, time) VALUES ("{}", "{}", "{}")'.format(user_id, question_id, time))
         return make_response(('success', 201))
 
 # Gets all data back for solves of that question
@@ -209,7 +242,7 @@ def scoreboard():
     return make_api_response('fail', 400)
 
 # Queries on solves
-@app.route('/api/v1/solves')
+@app.route('/api/v1/solves', methods = ['GET', 'POST'])
 def v1_solves():
     # TODO: Proper queries
     raw = None

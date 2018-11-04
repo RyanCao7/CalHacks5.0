@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <p>
+    Category: {{ category }}
+  </p>
+  <p><span id="mykatex1">...</span></p>
+  <script>
+    katex.render("{{ question_text }}", mykatex1);
+  </script>
+  <form action="/results" id="submitForm" method="post">
+    Type answer here (round to 2 decimal places): <input class="dataform" type="text" name="response" required="required"><br>
+    <input type="hidden" id="question_text" value="{{ question_id }}" name="question_id"/>
+    <input type="hidden" id="category" value="{{ category }}" name="category" />
+    <input type="submit" id="answerButton" value="Submit">
+  </form>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <p>
+    Category: {{ category }}
+  </p>
+  {% if correct %}
+    <p>
+      Nice work!
+    </p>
+  {% else %}
+    <p>
+      Better luck next time!
+    </p>
+  {% endif %}
+  <p>
+    New total solved: {{ total - unsolved }} / {{ total }}
+  </p>
+  <form action = "/home" method = "post">
+    <button>
+      Home
+    </button>
+  </form>
+{% endblock %}
