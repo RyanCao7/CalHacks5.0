@@ -2,6 +2,7 @@ from __future__ import print_function
 from flask import render_template, flash, redirect, jsonify, request, make_response
 from app import app
 from app.forms import LoginForm, CreateAccForm
+import random
 import hashlib
 import os
 import MySQLdb
@@ -13,8 +14,38 @@ CLOUDSQL_CONNECTION_NAME = os.environ.get('CLOUDSQL_CONNECTION_NAME')
 CLOUDSQL_USER = os.environ.get('CLOUDSQL_USER')
 CLOUDSQL_PASSWORD = os.environ.get('CLOUDSQL_PASSWORD')
 
+escape_dict={'\a':r'\a',
+           '\b':r'\b',
+           '\c':r'\c',
+           '\f':r'\f',
+           '\n':r'\n',
+           '\r':r'\r',
+           '\t':r'\t',
+           '\v':r'\v',
+           '\'':r'\'',
+           '\"':r'\"',
+           '\0':r'\0',
+           '\1':r'\1',
+           '\2':r'\2',
+           '\3':r'\3',
+           '\4':r'\4',
+           '\5':r'\5',
+           '\6':r'\6',
+           '\7':r'\7',
+           '\8':r'\8',
+           '\9':r'\9'}
+
+def raw_text(text):
+    """Returns a raw string representation of text"""
+    new_string=''
+    for char in text:
+        try: new_string+=escape_dict[char]
+        except KeyError: new_string+=char
+    return new_string
+
+
 def make_api_response(message, code):
-    return make_response(json.dumps({'status': message, indent = 4}, code))
+    return make_response((json.dumps({'status': message}, indent = 4), code))
 
 def default_param_factory():
     params = {}
@@ -28,6 +59,15 @@ def default_param_factory():
     return params
 
 params = default_param_factory()
+
+def mapping_leaderboard(info_tuple):
+    json_dicts = []
+    for bundle in info_tuple:
+        dict_bundle = {}
+        dict_bundle['name'] = bundle[0]
+        dict_bundle['time'] = bundle[1]
+        json_dicts.append(dict_bundle)
+    return json_dicts
 
 # Assume data comes in the form
 def mapping_question(info_tuple):
@@ -90,6 +130,24 @@ def connect_to_cloudsql():
 
 @app.route('/')
 
+@app.route('/category', methods = ['GET', 'POST'])
+def category():
+    print("Here")
+    category = request.args['category']
+    print(request.cookies)
+    username = request.cookies['username']
+    user_id = request.cookies['user_id']
+
+    raw = get_data_from_database('SELECT * FROM Question q WHERE q.category="{}" AND NOT(q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(category, user_id))
+    random_raw = random.choice(raw)
+    problem_id = random_raw[0]
+    category = random_raw[1]
+    text = random_raw[2]
+    question = random_raw[3]
+    answer = random_raw[4]
+    return render_template('math.html', question_text = raw_text(question.strip('$')).replace('\\', '\\\\'))
+
+
 @app.route('/home', methods = ['GET', 'POST'])
 def home():
     global params
@@ -102,7 +160,7 @@ def home():
     if 'username' not in request.cookies:
         params['user_id'] = 'not logged in'
         resp = make_response(render_template('base.html', title = 'test_title', logged_in = False))
-        resp.set_cookie('userID', 'not logged in')
+        resp.set_cookie('user_id', 'not logged in')
         resp.set_cookie('username', 'not logged in')
         return resp
 
@@ -135,27 +193,32 @@ def v1_solve():
         player_id = request.args['player_id']
         question_id = request.args['question_id']
         time = request.args['time']
+        print('INSERT INTO Solves (user_id, question_id, time) VALUES ("{}", "{}", "{}")'.format(player_id, question_id, time))
         raw = get_data_from_database('INSERT INTO Solves (user_id, question_id, time) VALUES ("{}", "{}", "{}")'.format(player_id, question_id, time))
-        return make_response(('lol', 201))
+        return make_response(('success', 201))
 
 # Gets all data back for solves of that question
-@app.route('/api/v1/scoreboard', methods = ['GET', 'POST'])
+@app.route('/api/v1/leaderboard', methods = ['GET', 'POST'])
 def scoreboard():
     if 'question_id' in request.args:
         # TODO: Grab correct SQL query
-        raw = get_data_from_database('SELECT * FROM User WHERE "{}" IN Solves'.format(request.args['question_id']))
-
+        raw = get_data_from_database('SELECT u.name, s.time FROM Solves s JOIN User u ON s.user_id = u.id WHERE s.question_id = "{}" ORDER BY s.time LIMIT 10'.format(request.args['question_id']))
+        print(raw)
         # TODO: Probably user mapping?
-        return jsonify(mapping_users(raw))
-    return make_api_response(('please enter a question ID', 400))
+        return jsonify(mapping_leaderboard(raw))
+    return make_api_response('fail', 400)
 
 # Queries on solves
 @app.route('/api/v1/solves')
 def v1_solves():
     # TODO: Proper queries
     raw = None
-    if 'player_id' in request.args: # All solves that this player made
-        raw = get_data_from_database('SELECT * FROM Solves WHERE user_id="{}"'.format(request.args['player_id']))
+    if 'user_id' in request.args and 'category' in request.args:
+        raw = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}" AND NOT (q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(request.args['category'], request.args['user_id']))[0][0]
+        raw2 = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}"'.format(request.args['category']))[0][0]
+        return jsonify({'unsolved': raw, 'total': raw2})
+    elif 'user_id' in request.args: # All solves that this player made
+        raw = get_data_from_database('SELECT * FROM Solves WHERE user_id="{}"'.format(request.args['user_id']))
     elif 'question_id' in request.args: # All solves on the specified question
         raw = get_data_from_database('SELECT * FROM Solves WHERE question_id="{}"'.format(request.args['question_id']))
     elif 'category' in request.args: # All solves of this particular category. This is sorta hacky.
@@ -165,16 +228,23 @@ def v1_solves():
     return jsonify(mapping_solves(raw))
 
 # Grabs a random unanswered (by the specified player) question in the specified category
-@app.route('/api/v1/category')
+@app.route('/api/v1/question')
 def v1_category():
     # TODO: Correct SQL Query
     raw = None
-    if 'player_id' in request.args and 'category' in request.args:
-        raw = get_data_from_database('SELECT * FROM Question JOIN Solves ON NOT Solves.question_id = Question.id')
-        random_unsolved = tuple(random.choice(raw))
-        return jsonify(mapping_question(random_unsolved))
+    if 'user_id' in request.args and 'category' in request.args:
+        raw = get_data_from_database('SELECT * FROM Question q WHERE q.category="{}" AND NOT(q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(request.args['category'], request.args['user_id']))
+        random_raw = random.choice(raw)
+        random_unsolved = {}
+        random_unsolved['problem_id'] = random_raw[0]
+        random_unsolved['category'] = random_raw[1]
+        random_unsolved['text'] = random_raw[2]
+        random_unsolved['question'] = random_raw[3]
+        random_unsolved['answer'] = random_raw[4]
+        print(random_unsolved)
+        return jsonify(random_unsolved)
 
-    return make_api_response(('please enter a player_id and category', 400))
+    return make_api_response('fail', 400)
 
 # Pass back all users
 @app.route('/api/v1/users')
@@ -199,12 +269,14 @@ def solves_by_user(user_id):
     return jsonify(mapping_solves(raw))
 
 @app.route('/api/v1/login', methods = ['GET', 'POST'])
-def login():
+def api_login():
     global params
 
     db = connect_to_cloudsql()
     cursor = db.cursor()
     cursor.execute('USE calhacktable')
+
+    print(request.args)
 
     if len(request.args) > 1:
         username = request.args['name']
@@ -215,11 +287,12 @@ def login():
 
         if len(query_result) == 1:
             user_data = query_result[0]
-            user_id, username = user_data
+            user_id, username, _ = user_data
+            return make_response((json.dumps({'status': 'success', 'user_id': user_id, 'username': username}, indent = 4), 201))
         else:
-            return make_api_response('That combination of username and password does not exist.', 400)
+            return make_response((json.dumps({'status': 'fail', 'user_id': None, 'username': None}, indent = 4), 200))
 
-    return make_api_response('Please enter name and pass fields.', 400)
+    return make_response((json.dumps({'status': 'fail', 'user_id': None, 'username': None}, indent = 4), 400))
 
 @app.route('/api/v1/create', methods = ['GET', 'POST'])
 def create_api():
@@ -249,21 +322,19 @@ def create_api():
             # Grab the ID from the database
             cursor.execute('SELECT * FROM User WHERE User.name = "{}" AND User.hashpass = "{}"'.format(new_username, new_hashpass))
             new_id = cursor.fetchall()[0][0]
-            return make_api_response('User account successfully created!', 201)
+            return make_response((json.dumps({'status': 'success', 'user_id': user_id, 'username': username}, indent = 4), 201))
         else:
-            return make_api_response('Username already taken!', 400)
+            return make_response((json.dumps({'status': 'fail', 'user_id': None, 'username': None}, indent = 4), 200))
 
-    return make_api_response('Please enter name and pass fields.', 400)
+    return make_response((json.dumps({'status': 'fail', 'user_id': None, 'username': None}, indent = 4), 400))
 
-@app.route('/api/v1/logout', methods = ['GET', 'POST'])
-def api_logout():
-    pass
+@app.route('/api/v1/')
 
 @app.route('/logout', methods = ['GET', 'POST'])
 def logout():
     params['user_id'] = 'not logged in'
     resp = make_response(render_template('logout.html'))
-    resp.set_cookie('userID', 'not logged in')
+    resp.set_cookie('user_id', 'not logged in')
     resp.set_cookie('username', 'not logged in')
     return resp
 
@@ -301,7 +372,7 @@ def create_account():
 
             # Set cookies accordingly
             resp = make_response(render_template('base.html', username = new_username, logged_in = True))
-            resp.set_cookie('userID', str(new_id), max_age = 10000)
+            resp.set_cookie('user_id', str(new_id), max_age = 10000)
             resp.set_cookie('username', str(new_username), max_age = 10000)
             params['response'] = resp
             return redirect('/home')
@@ -309,7 +380,6 @@ def create_account():
             fail = True
 
     return render_template('create.html', title='Sign In', fail = fail)
-
 
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
@@ -332,7 +402,7 @@ def login():
             user_data = query_result[0]
             # Makes the cookie expire after a day
             resp = make_response(render_template('base.html', username = user_data[1], logged_in = True))
-            resp.set_cookie('userID', str(user_data[0]), max_age = 10000)
+            resp.set_cookie('user_id', str(user_data[0]), max_age = 10000)
             resp.set_cookie('username', user_data[1], max_age = 10000)
             params['response'] = resp
             return redirect('/home')

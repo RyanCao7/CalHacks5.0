@@ -19,7 +19,7 @@
       <p>
         Welcome, {{ username }}!
         {% for category in categories %}
-          <form action = "/home?category={{ category }}" method = "get">
+          <form action = "/category?category={{ category }}" method = "post">
             <button>
               {{ category }}
             </button>
@@ -30,8 +30,8 @@
     <body>
       {% block content %}{% endblock %}
     </body>
-    <p><span id="mykatex1">...</span></p>
+    <!-- <p><span id="mykatex1">...</span></p>
     <script>
       katex.render("f(a,b,c) = (a^2+b^2+c^2)^3", mykatex1);
-    </script>
+    </script> -->
 </html>

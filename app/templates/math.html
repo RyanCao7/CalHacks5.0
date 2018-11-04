@@ -1,1 +1,8 @@
+{% extends "base.html" %}
 
+{% block content %}
+  <p><span id="mykatex1">...</span></p>
+  <script>
+    katex.render("{{ question_text }}", mykatex1);
+  </script>
+{% endblock %}
