@@ -144,7 +144,7 @@ def results():
     raw = get_data_from_database('SELECT * FROM Question q WHERE q.id="{}"'.format(question_id))[0]
     answer = raw[4]
 
-    correct = abs(int(user_answer) - int(answer)) < 0.01
+    correct = abs(float(user_answer) - float(answer)) < 0.01
     time = random.randint(1, 300)
     if correct:
         get_data_from_database('INSERT INTO Solves (user_id, question_id, time) VALUES ("{}", "{}", "{}")'.format(user_id, question_id, time))
@@ -167,7 +167,7 @@ def question():
     question = random_raw[3]
     answer = random_raw[4]
 
-    return render_template('question.html', question_text = raw_text(question.strip('$')).replace('\\', '\\\\'), category = category, answer = answer, question_id = question_id)
+    return render_template('question.html', question_text = raw_text(question.strip('$')).replace('\\', '\\\\'), category = category, answer = answer, question_id = question_id, question = text)
 
 @app.route('/category', methods = ['GET', 'POST'])
 def category():
@@ -189,7 +189,6 @@ def home():
     logged_in = False
 
     categories = list(thing[0] for thing in get_data_from_database('SELECT DISTINCT Category FROM Question'))
-    print('categories:', categories)
 
     if 'username' not in request.cookies:
         params['user_id'] = 'not logged in'
@@ -228,7 +227,7 @@ def v1_solve():
         question_id = request.args['question_id']
         time = request.args['time']
         raw = get_data_from_database('INSERT INTO Solves (user_id, question_id, time) VALUES ("{}", "{}", "{}")'.format(user_id, question_id, time))
-        return make_response(('success', 201))
+        return make_response((json.dumps({'status': 'success'}, indent = 4), 201))
 
 # Gets all data back for solves of that question
 @app.route('/api/v1/leaderboard', methods = ['GET', 'POST'])
@@ -433,8 +432,9 @@ def login():
 
         if len(query_result) == 1:
             user_data = query_result[0]
+            categories = list(thing[0] for thing in get_data_from_database('SELECT DISTINCT Category FROM Question'))
             # Makes the cookie expire after a day
-            resp = make_response(render_template('base.html', username = user_data[1], logged_in = True))
+            resp = make_response(render_template('base.html', username = user_data[1], logged_in = True, categories = categories))
             resp.set_cookie('user_id', str(user_data[0]), max_age = 10000)
             resp.set_cookie('username', user_data[1], max_age = 10000)
             params['response'] = resp
