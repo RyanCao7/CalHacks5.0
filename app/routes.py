@@ -353,8 +353,8 @@ def create_api():
 
             # Grab the ID from the database
             cursor.execute('SELECT * FROM User WHERE User.name = "{}" AND User.hashpass = "{}"'.format(new_username, new_hashpass))
-            new_id = cursor.fetchall()[0][0]
-            return make_response((json.dumps({'status': 'success', 'user_id': user_id, 'username': username}, indent = 4), 201))
+            user_id = cursor.fetchall()[0][0]
+            return make_response((json.dumps({'status': 'success', 'user_id': user_id, 'username': new_username}, indent = 4), 201))
         else:
             return make_response((json.dumps({'status': 'fail', 'user_id': None, 'username': None}, indent = 4), 200))
 

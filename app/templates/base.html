@@ -5,17 +5,28 @@
       <script type="text/javascript" src="/static/KaTeX-0.10.0/dist/katex.js"></script>
       <link rel="stylesheet" type="text/css" href="/static/KaTeX-0.10.0/dist/katex.css">
       <link rel="stylesheet" type="text/css" href="/static/base.css">
-      <title>{{ title }} - CalHacks5.0</title>
+      <title>Infintea - CalHacks5.0</title>
     </head>
-    <h class = "modal_heading">
-      CalHacks 5.0 - QuikMaths 5.0
-    </h>
+    <div class="title_div">
+      <h class = "title">
+        CalHacks 5.0 - InfinTea<br/>
+      </h>
+      <h class = "title">
+        Proudly presented to you by InfinTeam!
+      </h>
+    </div>
     <div>
-        <a href="{{ url_for('home') }}" class = "modal_heading_2">Home</a>
+      <div class="home_button">
+        <a href="{{ url_for('home') }}" class = "nav_button" id="home_button">Home</a>
+      </div>
         {% if logged_in %}
-          <a href="{{ url_for('logout') }}" class = "modal_heading_2">Logout</a>
+          <div class="log_button">
+            <a href="{{ url_for('logout') }}" class = "nav_button" id="log_button1">Logout</a>
+          </div>
         {% else %}
-          <a href="{{ url_for('login') }}" class = "modal_heading_2">Login</a>
+          <div class="log_button">
+            <a href="{{ url_for('login') }}" class = "nav_button" id="log_button2">Login</a>
+          </div>
         {% endif %}
     </div>
     {% if logged_in %}
