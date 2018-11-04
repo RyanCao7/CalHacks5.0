@@ -4,11 +4,29 @@
   font-size: 36px;
 }
 
+.centered_text {
+  text-align: center;
+  font-size: 20px;
+}
+
+.centered_button {
+  border-radius: 10px;
+  margin: auto;
+  width: 50%;
+  /* background-color: #d1fff5; */
+}
+
 .title_div {
   margin: auto;
   width: 50%;
   border: 3px solid green;
   padding: 10px;
+  border-radius: 20px;
+}
+
+.body_div {
+  margin: auto;
+  width: 50%;
 }
 
 .nav_button {
@@ -21,6 +39,7 @@
   border-right: 1px solid #333333;
   border-bottom: 1px solid #333333;
   border-left: 1px solid #CCCCCC;
+  border-radius: 10px;
 }
 
 .log_button {

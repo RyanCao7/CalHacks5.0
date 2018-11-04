@@ -152,7 +152,7 @@ def results():
     unsolved = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}" AND NOT (q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(category, user_id))[0][0]
     total = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}"'.format(category))[0][0]
 
-    return render_template('results.html', category = category, total = total, unsolved = unsolved, correct = correct)
+    return render_template('results.html', category = category, total = total, unsolved = unsolved, correct = correct, logged_in = True, username = username, q_status = False)
 
 @app.route('/question', methods = ['GET', 'POST'])
 def question():
@@ -167,7 +167,7 @@ def question():
     question = random_raw[3]
     answer = random_raw[4]
 
-    return render_template('question.html', question_text = raw_text(question.strip('$')).replace('\\', '\\\\'), category = category, answer = answer, question_id = question_id, question = text)
+    return render_template('question.html', question_text = raw_text(question.strip('$')).replace('\\', '\\\\'), category = category, answer = answer, question_id = question_id, question = text, logged_in = True, username = username, q_status = True)
 
 @app.route('/category', methods = ['GET', 'POST'])
 def category():
@@ -179,7 +179,7 @@ def category():
     unsolved = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}" AND NOT (q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(category, user_id))[0][0]
     total = get_data_from_database('SELECT COUNT(*) FROM Question q WHERE q.category="{}"'.format(category))[0][0]
 
-    return render_template('math.html', unsolved = unsolved, total = total, category = category)
+    return render_template('math.html', unsolved = unsolved, total = total, category = category, logged_in = True, username = username, q_status = True)
 
 
 @app.route('/home', methods = ['GET', 'POST'])
@@ -209,7 +209,7 @@ def home():
         return resp
 
     return render_template('base.html', title = 'test_title', username = params['username'], logged_in = logged_in,
-    categories = categories)
+    categories = categories, q_status = False)
 
 # Grabs single user data
 @app.route('/api/v1/user', methods = ['GET', 'POST'])

@@ -30,16 +30,20 @@
         {% endif %}
     </div>
     {% if logged_in %}
-      <p>
-        Welcome, {{ username }}!
-        {% for category in categories %}
-          <form action = "/category?category={{ category }}" method = "post">
-            <button>
-              {{ category }}
-            </button>
-          </form>
-        {% endfor %}
+    <div class="body_div">
+      <p class="centered_text">
+        {% if not q_status %}
+          Welcome, {{ username }}! Please pick a category below.
+          {% for category in categories %}
+            <form action = "/category?category={{ category }}" method = "post" class="centered_button">
+              <button class="centered_button">
+                {{ category }}
+              </button>
+            </form>
+          {% endfor %}
+        {% endif %}
       </p>
+    </div>
     {% endif %}
     <body>
       {% block content %}{% endblock %}
