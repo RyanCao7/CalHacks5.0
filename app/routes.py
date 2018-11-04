@@ -268,7 +268,7 @@ def v1_category():
         raw = get_data_from_database('SELECT * FROM Question q WHERE q.category="{}" AND NOT(q.id = ANY(SELECT question_id FROM Solves WHERE user_id="{}"))'.format(request.args['category'], request.args['user_id']))
         random_raw = random.choice(raw)
         random_unsolved = {}
-        random_unsolved['problem_id'] = random_raw[0]
+        random_unsolved['id'] = random_raw[0]
         random_unsolved['category'] = random_raw[1]
         random_unsolved['text'] = random_raw[2]
         random_unsolved['question'] = random_raw[3]
