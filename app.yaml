@@ -9,7 +9,7 @@ handlers:
   script: main.app
 
 env_variables:
-    CLOUDSQL_CONNECTION_NAME: calhacks5-0
+    CLOUDSQL_CONNECTION_NAME: calhacks50:us-west1:calhacks5-0
     CLOUDSQL_USER: root
     CLOUDSQL_PASSWORD: BradleyRyanCalHacks
 
